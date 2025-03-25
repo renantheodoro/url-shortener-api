@@ -1,3 +1,4 @@
+const functions = require("firebase-functions");
 const express = require("express");
 const shortid = require("shortid");
 
@@ -12,19 +13,26 @@ app.use(express.json());
 
 // Rota para encurtar a URL
 app.post("/api/shorten", (req, res) => {
-  const { originalUrl } = req.body;
+  const { url } = req.body;
 
-  if (!originalUrl) {
+  if (!url) {
     return res.status(400).json({ error: "URL is required" });
   }
 
   const shortCode = shortid.generate();
-  const shortUrl = `http://localhost:${port}/api/${shortCode}`;
+  const shortUrl = `https://<your-project-id>.web.app/api/${shortCode}`; // Atualize a URL para o Firebase Hosting
+  const alias = shortCode;
 
   // Armazenando a URL curta no banco de dados em memória
-  urlDatabase[shortCode] = originalUrl;
+  urlDatabase[shortCode] = url;
 
-  return res.json({ shortUrl });
+  return res.json({
+    alias: alias,
+    _links: {
+      self: `https://<your-project-id>.web.app/api/${shortCode}`,
+      short: shortUrl,
+    },
+  });
 });
 
 // Rota para redirecionar a URL curta para a original
@@ -39,7 +47,5 @@ app.get("/api/:shortCode", (req, res) => {
   return res.redirect(originalUrl);
 });
 
-// Iniciar o servidor
-app.listen(port, () => {
-  console.log(`Server running at http://localhost:${port}`);
-});
+// Exporte a função para o Firebase
+exports.app = functions.https.onRequest(app);
